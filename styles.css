@@ -1,314 +1,232 @@
-import { ItemView, MarkdownRenderer, TFile, WorkspaceLeaf } from "obsidian";
-import type PulpitianPlugin from "./main";
+.pulpitian-view {
+  --pulpitian-bg: #111;
+  --pulpitian-fg: #f4f1ea;
+  --pulpitian-muted: #beb9ad;
 
-export const PULPITIAN_VIEW_TYPE = "pulpitian-manuscript";
+  background: var(--pulpitian-bg);
+  color: var(--pulpitian-fg);
+}
 
-type TimerState = "idle" | "running" | "paused";
+.pulpitian-theme-sepia {
+  --pulpitian-bg: #f1e6c9;
+  --pulpitian-fg: #34291f;
+  --pulpitian-muted: #786a59;
+}
 
-export class ManuscriptView extends ItemView {
-  private activeFile: TFile | null = null;
-  private scrollPosition = 0;
 
-  private timerState: TimerState = "idle";
-  private timerStartedAt: number | null = null;
-  private elapsedBeforeStart = 0;
-  private timerId: number | null = null;
+/* =========================================
+   TOP TOOLBAR
+   ========================================= */
 
-  private timerEl: HTMLElement | null = null;
-  private timerButton: HTMLButtonElement | null = null;
-
-  constructor(
-    leaf: WorkspaceLeaf,
-    private readonly plugin: PulpitianPlugin
-  ) {
-    super(leaf);
-  }
-
-  getViewType(): string {
-    return PULPITIAN_VIEW_TYPE;
-  }
-
-  getDisplayText(): string {
-    return this.activeFile
-      ? `Pulpitian: ${this.activeFile.basename}`
-      : "Pulpitian";
-  }
-
-  async onOpen(): Promise<void> {
-    this.containerEl.addClass("pulpitian-view");
-
-    this.registerEvent(
-      this.app.workspace.on("file-open", (file) => {
-        if (file instanceof TFile && file.extension === "md") {
-          void this.showManuscript(file);
-        }
-      })
-    );
-  }
-
-  async onClose(): Promise<void> {
-    this.clearTimer();
-    this.containerEl.empty();
-  }
-
-  async showManuscript(file: TFile): Promise<void> {
-    this.activeFile = file;
-    this.scrollPosition = 0;
-    await this.render();
-  }
-
-  private async render(): Promise<void> {
-    const { containerEl } = this;
-
-    containerEl.empty();
-    containerEl.removeClasses([
-      "pulpitian-theme-black",
-      "pulpitian-theme-sepia"
-    ]);
-
-    containerEl.addClass(
-      `pulpitian-theme-${this.plugin.settings.readingTheme}`
+.pulpitian-toolbar {
+  border-bottom: 1px solid
+    color-mix(
+      in srgb,
+      var(--pulpitian-fg) 20%,
+      transparent
     );
 
-    const toolbar = containerEl.createDiv({
-      cls: "pulpitian-toolbar"
-    });
+  padding: 0.75rem 1rem 1rem;
+}
 
-    toolbar.createDiv({
-      cls: "pulpitian-title",
-      text: this.activeFile?.basename ?? "No manuscript selected"
-    });
+.pulpitian-title {
+  color: var(--pulpitian-muted);
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
 
-    const timerPanel = toolbar.createDiv({
-      cls: "pulpitian-timer-panel"
-    });
 
-    this.timerEl = timerPanel.createDiv({
-      cls: "pulpitian-timer",
-      text: "00:00"
-    });
+/* =========================================
+   TIMER
+   ========================================= */
 
-    const controls = timerPanel.createDiv({
-      cls: "pulpitian-timer-controls"
-    });
+.pulpitian-timer-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+}
 
-    this.timerButton = controls.createEl("button", {
-      text: "Start"
-    });
+.pulpitian-timer {
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: 0.03em;
 
-    this.timerButton.addEventListener("click", () => {
-      this.handleTimerButton();
-    });
+  transition: color 150ms ease;
+}
 
-    const resetButton = controls.createEl("button", {
-      text: "Reset"
-    });
+.pulpitian-timer-normal {
+  color: var(--pulpitian-fg);
+}
 
-    resetButton.addEventListener("click", () => {
-      this.resetTimer();
-    });
+/*
+  Less than five minutes remaining
+*/
+.pulpitian-timer-warning {
+  color: #f59e0b !important;
+}
 
-    const manuscriptEl = containerEl.createDiv({
-      cls: "pulpitian-manuscript"
-    });
+/*
+  Less than one minute remaining
+*/
+.pulpitian-timer-danger {
+  color: #ef4444 !important;
+}
 
-    manuscriptEl.style.fontSize =
-      `${this.plugin.settings.fontSize}px`;
+.pulpitian-timer-controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
 
-    manuscriptEl.style.lineHeight =
-      String(this.plugin.settings.lineHeight);
 
-    manuscriptEl.addEventListener("scroll", () => {
-      this.scrollPosition = manuscriptEl.scrollTop;
-    });
+/* =========================================
+   MANUSCRIPT
+   ========================================= */
 
-    if (!this.activeFile) {
-      manuscriptEl.createEl("p", {
-        text:
-          "Open a Markdown note, then use " +
-          "‘Open current note in Pulpitian’."
-      });
+.pulpitian-manuscript {
+  box-sizing: border-box;
 
-      return;
-    }
+  height: calc(100% - 10rem);
 
-    const source = await this.app.vault.read(this.activeFile);
+  margin: 0 auto;
+  max-width: 48rem;
 
-    await MarkdownRenderer.render(
-      this.app,
-      source,
-      manuscriptEl,
-      this.activeFile.path,
-      this
-    );
+  overflow-y: auto;
 
-    manuscriptEl.scrollTop = this.scrollPosition;
+  padding: 3rem 2rem 8rem;
+}
 
-    this.updateTimer();
-  }
+.pulpitian-manuscript
+:is(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  li,
+  blockquote
+) {
+  color: var(--pulpitian-fg);
+}
 
-  private handleTimerButton(): void {
-    if (this.timerState === "idle") {
-      this.startTimer();
-      return;
-    }
+.pulpitian-manuscript a {
+  color: inherit;
+}
 
-    if (this.timerState === "running") {
-      this.pauseTimer();
-      return;
-    }
 
-    this.resumeTimer();
-  }
+/* =========================================
+   ALL CALLOUTS
+   ========================================= */
 
-  private startTimer(): void {
-    this.elapsedBeforeStart = 0;
-    this.timerStartedAt = Date.now();
-    this.timerState = "running";
+.pulpitian-manuscript .callout {
+  border-radius: 0.65rem;
 
-    this.startTimerInterval();
-    this.updateTimer();
-  }
+  border-width: 1px;
 
-  private pauseTimer(): void {
-    if (this.timerStartedAt !== null) {
-      this.elapsedBeforeStart +=
-        Date.now() - this.timerStartedAt;
-    }
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
 
-    this.timerStartedAt = null;
-    this.timerState = "paused";
+  overflow: hidden;
+}
 
-    this.clearTimerInterval();
-    this.updateTimer();
-  }
+.pulpitian-manuscript .callout-title {
+  font-weight: 750;
+}
 
-  private resumeTimer(): void {
-    this.timerStartedAt = Date.now();
-    this.timerState = "running";
+.pulpitian-manuscript .callout-content {
+  color: var(--pulpitian-fg);
+}
 
-    this.startTimerInterval();
-    this.updateTimer();
-  }
 
-  private resetTimer(): void {
-    this.clearTimerInterval();
+/* =========================================
+   SCRIPTURE
+   ========================================= */
 
-    this.timerState = "idle";
-    this.timerStartedAt = null;
-    this.elapsedBeforeStart = 0;
+.pulpitian-manuscript
+.callout[data-callout="scripture"] {
+  --callout-color: 234, 179, 8;
+  --callout-icon: lucide-book-open;
+}
 
-    this.updateTimer();
-  }
 
-  private startTimerInterval(): void {
-    this.clearTimerInterval();
+/* =========================================
+   GOSPEL
+   ========================================= */
 
-    this.timerId = window.setInterval(() => {
-      this.updateTimer();
-    }, 250);
-  }
+.pulpitian-manuscript
+.callout[data-callout="gospel"] {
+  --callout-color: 168, 85, 247;
+  --callout-icon: lucide-cross;
+}
 
-  private clearTimerInterval(): void {
-    if (this.timerId !== null) {
-      window.clearInterval(this.timerId);
-    }
 
-    this.timerId = null;
-  }
+/* =========================================
+   APPLICATION
+   ========================================= */
 
-  private clearTimer(): void {
-    this.clearTimerInterval();
+.pulpitian-manuscript
+.callout[data-callout="application"] {
+  --callout-color: 34, 197, 94;
+  --callout-icon: lucide-target;
+}
 
-    this.timerStartedAt = null;
-    this.elapsedBeforeStart = 0;
-    this.timerState = "idle";
-  }
 
-  private getElapsedSeconds(): number {
-    let milliseconds = this.elapsedBeforeStart;
+/* =========================================
+   PAUSE
+   ========================================= */
 
-    if (
-      this.timerState === "running" &&
-      this.timerStartedAt !== null
-    ) {
-      milliseconds +=
-        Date.now() - this.timerStartedAt;
-    }
+.pulpitian-manuscript
+.callout[data-callout="pause"] {
+  --callout-color: 59, 130, 246;
+  --callout-icon: lucide-pause;
+}
 
-    return Math.floor(milliseconds / 1000);
-  }
 
-  private updateTimer(): void {
-    if (!this.timerEl || !this.timerButton) {
-      return;
-    }
+/* =========================================
+   SLOWDOWN
+   ========================================= */
 
-    const elapsedSeconds = this.getElapsedSeconds();
+.pulpitian-manuscript
+.callout[data-callout="slowdown"] {
+  --callout-color: 14, 165, 233;
+  --callout-icon: lucide-gauge;
+}
 
-    /*
-     * TEMPORARY TARGET:
-     * 30 minutes.
-     *
-     * We will replace this with the user-selectable
-     * sermon length control next.
-     */
-    const targetSeconds = 30 * 60;
 
-    const remainingSeconds = Math.max(
-      0,
-      targetSeconds - elapsedSeconds
-    );
+/* =========================================
+   WARNING
+   ========================================= */
 
-    /*
-     * Right now we're displaying elapsed time.
-     * The threshold colors are based on TIME REMAINING.
-     */
-    const displaySeconds = elapsedSeconds;
+.pulpitian-manuscript
+.callout[data-callout="warning"] {
+  --callout-color: 245, 158, 11;
+  --callout-icon: lucide-triangle-alert;
+}
 
-    const minutes = Math.floor(displaySeconds / 60)
-      .toString()
-      .padStart(2, "0");
 
-    const seconds = (displaySeconds % 60)
-      .toString()
-      .padStart(2, "0");
+/* =========================================
+   REPEAT
+   ========================================= */
 
-    this.timerEl.textContent = `${minutes}:${seconds}`;
+.pulpitian-manuscript
+.callout[data-callout="repeat"] {
+  --callout-color: 236, 72, 153;
+  --callout-icon: lucide-repeat-2;
+}
 
-    this.timerEl.removeClasses([
-      "pulpitian-timer-normal",
-      "pulpitian-timer-warning",
-      "pulpitian-timer-danger"
-    ]);
 
-    /*
-     * LESS THAN 1 MINUTE = RED
-     */
-    if (remainingSeconds < 60) {
-      this.timerEl.addClass("pulpitian-timer-danger");
-    }
+/* =========================================
+   SLIDE
+   ========================================= */
 
-    /*
-     * LESS THAN 5 MINUTES = ORANGE
-     */
-    else if (remainingSeconds < 5 * 60) {
-      this.timerEl.addClass("pulpitian-timer-warning");
-    }
-
-    /*
-     * EVERYTHING ELSE = NORMAL
-     */
-    else {
-      this.timerEl.addClass("pulpitian-timer-normal");
-    }
-
-    if (this.timerState === "running") {
-      this.timerButton.textContent = "Pause";
-    } else if (this.timerState === "paused") {
-      this.timerButton.textContent = "Resume";
-    } else {
-      this.timerButton.textContent = "Start";
-    }
-  }
+.pulpitian-manuscript
+.callout[data-callout="slide"] {
+  --callout-color: 99, 102, 241;
+  --callout-icon: lucide-presentation;
 }
