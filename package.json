@@ -1,0 +1,17 @@
+{
+  "name": "pulpitian",
+  "version": "0.1.0",
+  "description": "A manuscript-first preaching companion for Obsidian.",
+  "private": true,
+  "scripts": {
+    "build": "node esbuild.mjs production",
+    "dev": "node esbuild.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "esbuild": "^0.24.0",
+    "obsidian": "latest",
+    "tslib": "^2.8.1",
+    "typescript": "^5.7.2"
+  }
+}

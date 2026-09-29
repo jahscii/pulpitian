@@ -1,0 +1,9 @@
+{
+  "id": "pulpitian",
+  "name": "Pulpitian",
+  "version": "0.1.0",
+  "minAppVersion": "1.7.0",
+  "description": "A manuscript-first preaching companion for Obsidian.",
+  "author": "Peter Barnaby",
+  "isDesktopOnly": false
+}
