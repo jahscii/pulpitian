@@ -127,7 +127,8 @@
 .pulpitian-manuscript .callout {
   border-radius: 0.65rem;
 
-  border-width: 1px;
+  background-color: rgba(var(--callout-color), 0.14);
+  border: 1px solid rgba(var(--callout-color), 0.42);
 
   margin-top: 1.25rem;
   margin-bottom: 1.25rem;
